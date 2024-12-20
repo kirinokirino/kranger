@@ -94,7 +94,11 @@ impl App {
 
             let parent_item = self.parent_directory_contents.get(line).unwrap_or(&empty);
 
-            println!("{parent_item} | {current_item}\r");
+            println!(
+                "{} | {}\r",
+                truncate_with_ellipsis(parent_item, 10),
+                truncate_with_ellipsis(current_item, 15)
+            );
         }
 
         println!("\r");
@@ -134,4 +138,12 @@ fn directory_contents(path: &PathBuf) -> Vec<String> {
         .filter_map(|e| e.ok())
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .collect()
+}
+
+fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
+    if input.len() > max_length {
+        format!("{}…", &input[..max_length - 1])
+    } else {
+        format!("{:<width$}", input, width = max_length)
+    }
 }
