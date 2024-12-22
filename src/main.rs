@@ -164,12 +164,8 @@ impl App {
         print!("{}", ansi::CLEAR);
         self.show_breadcrumbs();
 
-        let max_lines = self
-            .current_directory_contents
-            .len()
-            .max(self.parent_directory_contents.len());
-
-        for line in 0..max_lines {
+        let (from, to) = self.rows_to_print();
+        for line in from..to {
             let is_selected = line == self.current_selection;
             let selection_arrow = match is_selected {
                 true => "->",
@@ -278,6 +274,32 @@ impl App {
     }
 
     // Display
+
+    fn rows_to_print(&self) -> (usize, usize) {
+        let rows_to_show = 12;
+
+        let max_lines = self
+            .current_directory_contents
+            .len()
+            .max(self.parent_directory_contents.len());
+
+        if max_lines > rows_to_show {
+            let half = rows_to_show / 2;
+            if self.current_selection < half {
+                // limited from the start
+                (0, rows_to_show)
+            } else if self.current_selection > (max_lines - half) {
+                // limited from the end
+                (max_lines - rows_to_show, max_lines)
+            } else {
+                // if selection > half of rows_to_show, add the diff to the window
+                let start_offset = self.current_selection - half;
+                (start_offset, self.current_selection + half)
+            }
+        } else {
+            (0, max_lines)
+        }
+    }
 
     fn display_file(&self, file: Option<&File>, max_length: usize) -> String {
         if let Some(file) = file {
