@@ -199,7 +199,7 @@ impl App {
                 self.display_file(self.current_directory_contents.get(line), 10);
 
             let formatted_parent_item =
-                self.display_file(self.current_directory_contents.get(line), 15);
+                self.display_file(self.parent_directory_contents.get(line), 15);
 
             println!(
                 "{} | {selection_arrow} {}\r",
