@@ -5,7 +5,24 @@ use anyhow::{anyhow, Result};
 use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers};
 use walkdir::WalkDir;
 
-const CLEAR: &str = "\x1B[2J\x1B[1;1H";
+mod ansi {
+    pub const CLEAR: &str = "\x1B[2J\x1B[1;1H";
+    pub const RESET: &str = "\x1B[0m";
+    pub const WHITE: &str = "\x1B[37m";
+    pub const BLUE: &str = "\x1B[34m";
+    pub const CYAN: &str = "\x1B[36m";
+    /*
+    Regular Files: White (\x1B[37m)
+    Directories: Blue (\x1B[34m)
+    Symbolic Links: Cyan (\x1B[36m)
+    Executable Files: Green (\x1B[32m)
+    Archive Files: Magenta (\x1B[35m)
+    Compressed Files: Yellow (\x1B[33m)
+    Socket Files: Magenta (\x1B[35m)
+    FIFO Files: Yellow (\x1B[33m)
+    Device Files: Red (\x1B[31m)
+     */
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new()?;
@@ -144,7 +161,7 @@ impl App {
 
     fn display(&self) {
         let empty = String::new();
-        print!("{CLEAR}");
+        print!("{}", ansi::CLEAR);
         self.show_breadcrumbs();
 
         let max_lines = self
@@ -158,20 +175,16 @@ impl App {
                 true => "->",
                 false => "  ",
             };
-            let current_item = self
-                .current_directory_contents
-                .get(line)
-                .map_or(&empty, |file| &file.name);
 
-            let parent_item = self
-                .parent_directory_contents
-                .get(line)
-                .map_or(&empty, |file| &file.name);
+            let formatted_current_item =
+                self.display_file(self.current_directory_contents.get(line), 10);
+
+            let formatted_parent_item =
+                self.display_file(self.current_directory_contents.get(line), 15);
 
             println!(
                 "{} | {selection_arrow} {}\r",
-                truncate_with_ellipsis(parent_item, 10),
-                truncate_with_ellipsis(current_item, 15)
+                formatted_parent_item, formatted_current_item
             );
         }
 
@@ -265,6 +278,43 @@ impl App {
     }
 
     // Display
+
+    fn display_file(&self, file: Option<&File>, max_length: usize) -> String {
+        if let Some(file) = file {
+            match file.ftype {
+                FileType::File => self.display_normal_file(file, max_length),
+                FileType::Directory => self.display_directory(file, max_length),
+                FileType::Link => self.display_link(file, max_length),
+            }
+        } else {
+            " ".repeat(max_length)
+        }
+    }
+
+    fn display_normal_file(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::WHITE,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
+    fn display_directory(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::BLUE,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
+    fn display_link(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::CYAN,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
 
     fn show_breadcrumbs(&self) {
         println!("{}\r", self.current_directory.display());
