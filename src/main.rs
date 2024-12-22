@@ -3,14 +3,15 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
 use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers};
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 mod ansi {
     pub const CLEAR: &str = "\x1B[2J\x1B[1;1H";
     pub const RESET: &str = "\x1B[0m";
-    pub const WHITE: &str = "\x1B[37m";
+    pub const WHITE: &str = "\x1B[97m";
     pub const BLUE: &str = "\x1B[34m";
     pub const CYAN: &str = "\x1B[36m";
+    pub const GRAY: &str = "\x1B[37m";
     /*
     Regular Files: White (\x1B[37m)
     Directories: Blue (\x1B[34m)
@@ -40,6 +41,7 @@ struct App {
 
     should_run: bool,
     directory_changed: bool,
+    show_hidden: bool,
 
     keybindings: HashMap<(KeyCode, KeyModifiers), ApplicationEvent>,
 
@@ -64,6 +66,7 @@ impl App {
 
             should_run: true,
             directory_changed: true,
+            show_hidden: true,
 
             keybindings: HashMap::new(),
 
@@ -99,6 +102,7 @@ impl App {
             (KeyCode::Char('d'), KeyModifiers::NONE),
             (KeyCode::Char('w'), KeyModifiers::NONE),
             (KeyCode::Char('s'), KeyModifiers::NONE),
+            (KeyCode::Char('h'), KeyModifiers::NONE),
         ];
 
         let events_for_default_keybindings = vec![
@@ -108,6 +112,7 @@ impl App {
             ApplicationEvent::NavigateDown,
             ApplicationEvent::SelectPrevious,
             ApplicationEvent::SelectNext,
+            ApplicationEvent::ToggleShowHidden,
         ];
         for ((key, modifiers), event) in default_keybindings
             .into_iter()
@@ -132,9 +137,12 @@ impl App {
 
     fn update(&mut self) {
         if self.directory_changed {
-            self.current_directory_contents = directory_contents(&self.current_directory);
-            self.parent_directory_contents =
-                directory_contents(&self.parent_directory().unwrap_or("\\".into()));
+            self.current_directory_contents =
+                directory_contents(&self.current_directory, self.show_hidden);
+            self.parent_directory_contents = directory_contents(
+                &self.parent_directory().unwrap_or("\\".into()),
+                self.show_hidden,
+            );
             self.directory_changed = false;
 
             self.current_selection = 0;
@@ -152,6 +160,11 @@ impl App {
                 ApplicationEvent::NavigateDown => self.navigate_down(),
                 ApplicationEvent::SelectNext => self.change_selection(1),
                 ApplicationEvent::SelectPrevious => self.change_selection(-1),
+                ApplicationEvent::ToggleShowHidden => {
+                    self.show_hidden = !self.show_hidden;
+                    self.directory_changed = true;
+                    Ok(())
+                }
             };
             if let Err(err) = result {
                 self.msg(format!("Error: {}", err));
@@ -303,14 +316,27 @@ impl App {
 
     fn display_file(&self, file: Option<&File>, max_length: usize) -> String {
         if let Some(file) = file {
-            match file.ftype {
-                FileType::File => self.display_normal_file(file, max_length),
-                FileType::Directory => self.display_directory(file, max_length),
-                FileType::Link => self.display_link(file, max_length),
+            if file.name.starts_with('.') {
+                self.display_hidden_file(file, max_length)
+            } else {
+                match file.ftype {
+                    FileType::File => self.display_normal_file(file, max_length),
+                    FileType::Directory => self.display_directory(file, max_length),
+                    FileType::Link => self.display_link(file, max_length),
+                }
             }
         } else {
             " ".repeat(max_length)
         }
+    }
+
+    fn display_hidden_file(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::GRAY,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
     }
 
     fn display_normal_file(&self, file: &File, max_length: usize) -> String {
@@ -350,13 +376,24 @@ impl App {
     }
 }
 
-fn directory_contents(path: &PathBuf) -> Vec<File> {
-    use walkdir::DirEntry;
+fn directory_contents(path: &PathBuf, show_hidden: bool) -> Vec<File> {
     let mut files: Vec<File> = WalkDir::new(path)
         .max_depth(1)
         .min_depth(1)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            if show_hidden {
+                e.ok()
+            } else {
+                match e {
+                    Ok(entry) => match is_hidden(&entry) {
+                        true => None,
+                        false => Some(entry),
+                    },
+                    Err(_) => None,
+                }
+            }
+        })
         .map(|entry| {
             let ftype = entry.file_type();
             let ftype = if ftype.is_file() {
@@ -405,6 +442,7 @@ enum ApplicationEvent {
     NavigateDown,
     SelectNext,
     SelectPrevious,
+    ToggleShowHidden,
 }
 
 #[derive(Debug, Clone)]
@@ -424,4 +462,12 @@ enum FileType {
     File,
     Directory,
     Link,
+}
+
+fn is_hidden(entry: &DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .map(|s| s.starts_with("."))
+        .unwrap_or(false)
 }
