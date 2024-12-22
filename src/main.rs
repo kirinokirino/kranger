@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
@@ -21,6 +22,8 @@ struct App {
     should_run: bool,
     directory_changed: bool,
 
+    keybindings: HashMap<(KeyCode, KeyModifiers), ApplicationEvent>,
+
     new_events: Vec<ApplicationEvent>,
 
     debug_messages: Vec<String>,
@@ -29,7 +32,7 @@ struct App {
 impl App {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let starting_directory = std::env::current_dir().unwrap();
-        let mut current_directory = starting_directory.clone();
+        let current_directory = starting_directory.clone();
 
         Ok(Self {
             starting_directory,
@@ -41,6 +44,8 @@ impl App {
             should_run: true,
             directory_changed: true,
 
+            keybindings: HashMap::new(),
+
             new_events: Vec::new(),
 
             debug_messages: Vec::new(),
@@ -49,8 +54,13 @@ impl App {
 
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         crossterm::terminal::enable_raw_mode()?;
+
+        self.setup();
+
         while self.should_run {
-            self.input();
+            if let Err(err) = self.input() {
+                self.msg(format!("{}", err));
+            }
             self.update();
             self.display();
 
@@ -58,6 +68,26 @@ impl App {
         }
         crossterm::terminal::disable_raw_mode()?;
         Ok(())
+    }
+
+    fn setup(&mut self) {
+        let default_keybindings = vec![
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('a'), KeyModifiers::NONE),
+        ];
+
+        let events_for_default_keybindings = vec![
+            ApplicationEvent::Close,
+            ApplicationEvent::Close,
+            ApplicationEvent::NavigateUp,
+        ];
+        for ((key, modifiers), event) in default_keybindings
+            .into_iter()
+            .zip(events_for_default_keybindings)
+        {
+            self.add_keybinding(key, modifiers, event);
+        }
     }
 
     fn input(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -122,24 +152,16 @@ impl App {
 
     // Input
 
+    fn add_keybinding(&mut self, key: KeyCode, modifiers: KeyModifiers, event: ApplicationEvent) {
+        self.keybindings.insert((key, modifiers), event);
+    }
+
     fn resolve_keybinding(
         &mut self,
         key: KeyCode,
         modifiers: KeyModifiers,
     ) -> Option<ApplicationEvent> {
-        match (key, modifiers) {
-            (KeyCode::Char('c'), KeyModifiers::CONTROL) => Some(ApplicationEvent::Close),
-            // (KeyCode::Char(c), _) => {
-            //     self.msg(format!("You pressed: {}", c));
-            //     None
-            // }
-            (KeyCode::Esc, _) => Some(ApplicationEvent::Close),
-            (KeyCode::Char('a'), _) => Some(ApplicationEvent::NavigateUp),
-            other => {
-                self.msg(format!("Other: {other:?}"));
-                None
-            }
-        }
+        self.keybindings.get(&(key, modifiers)).copied()
     }
 
     // Update
