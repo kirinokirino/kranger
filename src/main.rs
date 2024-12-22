@@ -15,6 +15,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 struct App {
     starting_directory: PathBuf,
     current_directory: PathBuf,
+    current_selection: usize,
+    selected_item: Option<PathBuf>,
 
     current_directory_contents: Vec<String>,
     parent_directory_contents: Vec<String>,
@@ -37,6 +39,8 @@ impl App {
         Ok(Self {
             starting_directory,
             current_directory,
+            current_selection: 0,
+            selected_item: None,
 
             current_directory_contents: Vec::new(),
             parent_directory_contents: Vec::new(),
@@ -75,12 +79,14 @@ impl App {
             (KeyCode::Esc, KeyModifiers::NONE),
             (KeyCode::Char('c'), KeyModifiers::CONTROL),
             (KeyCode::Char('a'), KeyModifiers::NONE),
+            (KeyCode::Char('d'), KeyModifiers::NONE),
         ];
 
         let events_for_default_keybindings = vec![
             ApplicationEvent::Close,
             ApplicationEvent::Close,
             ApplicationEvent::NavigateUp,
+            ApplicationEvent::NavigateDown,
         ];
         for ((key, modifiers), event) in default_keybindings
             .into_iter()
@@ -109,15 +115,27 @@ impl App {
             self.parent_directory_contents =
                 directory_contents(&self.parent_directory().unwrap_or("\\".into()));
             self.directory_changed = false;
+
+            self.current_selection = 0;
+            if let Some(item) = self.current_directory_contents.get(self.current_selection) {
+                self.selected_item = Some(self.current_directory.join(item));
+            };
         }
 
         let mut events = std::mem::take(&mut self.new_events);
         for event in events.drain(..) {
-            match event {
-                ApplicationEvent::Close => self.should_run = false,
-                ApplicationEvent::NavigateUp => self
-                    .navigate_up()
-                    .unwrap_or_else(|error| self.msg(format!("Unable to navigate up, {error}"))),
+            let result = match event {
+                ApplicationEvent::Close => {
+                    self.should_run = false;
+                    Ok(())
+                }
+                ApplicationEvent::NavigateUp => self.navigate_up(),
+                ApplicationEvent::NavigateDown => self.navigate_down(),
+                ApplicationEvent::SelectNext => todo!(),
+                ApplicationEvent::SelectPrevious => todo!(),
+            };
+            if let Err(err) = result {
+                self.msg(format!("Error: {}", err));
             }
         }
     }
@@ -133,12 +151,17 @@ impl App {
             .max(self.parent_directory_contents.len());
 
         for line in 0..max_lines {
+            let is_selected = line == self.current_selection;
+            let selection_arrow = match is_selected {
+                true => "->",
+                false => "  ",
+            };
             let current_item = self.current_directory_contents.get(line).unwrap_or(&empty);
 
             let parent_item = self.parent_directory_contents.get(line).unwrap_or(&empty);
 
             println!(
-                "{} | {}\r",
+                "{} | {selection_arrow} {}\r",
                 truncate_with_ellipsis(parent_item, 10),
                 truncate_with_ellipsis(current_item, 15)
             );
@@ -179,6 +202,20 @@ impl App {
             .ok_or(anyhow!("No parent directory available"))?;
         self.change_directory(parent_directory);
         Ok(())
+    }
+
+    fn navigate_down(&mut self) -> Result<()> {
+        let selection = self
+            .selected_item
+            .clone()
+            .ok_or(anyhow!("No item selected!"))?;
+        match selection.is_dir() {
+            true => {
+                self.change_directory(selection);
+                Ok(())
+            }
+            false => Err(anyhow!("Selected item is not a directory!")),
+        }
     }
 
     fn change_directory(&mut self, to: PathBuf) {
@@ -222,4 +259,7 @@ fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
 enum ApplicationEvent {
     Close,
     NavigateUp,
+    NavigateDown,
+    SelectNext,
+    SelectPrevious,
 }
