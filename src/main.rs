@@ -80,6 +80,8 @@ impl App {
             (KeyCode::Char('c'), KeyModifiers::CONTROL),
             (KeyCode::Char('a'), KeyModifiers::NONE),
             (KeyCode::Char('d'), KeyModifiers::NONE),
+            (KeyCode::Char('w'), KeyModifiers::NONE),
+            (KeyCode::Char('s'), KeyModifiers::NONE),
         ];
 
         let events_for_default_keybindings = vec![
@@ -87,6 +89,8 @@ impl App {
             ApplicationEvent::Close,
             ApplicationEvent::NavigateUp,
             ApplicationEvent::NavigateDown,
+            ApplicationEvent::SelectPrevious,
+            ApplicationEvent::SelectNext,
         ];
         for ((key, modifiers), event) in default_keybindings
             .into_iter()
@@ -117,9 +121,7 @@ impl App {
             self.directory_changed = false;
 
             self.current_selection = 0;
-            if let Some(item) = self.current_directory_contents.get(self.current_selection) {
-                self.selected_item = Some(self.current_directory.join(item));
-            };
+            self.update_selected_item();
         }
 
         let mut events = std::mem::take(&mut self.new_events);
@@ -131,8 +133,8 @@ impl App {
                 }
                 ApplicationEvent::NavigateUp => self.navigate_up(),
                 ApplicationEvent::NavigateDown => self.navigate_down(),
-                ApplicationEvent::SelectNext => todo!(),
-                ApplicationEvent::SelectPrevious => todo!(),
+                ApplicationEvent::SelectNext => self.change_selection(1),
+                ApplicationEvent::SelectPrevious => self.change_selection(-1),
             };
             if let Err(err) = result {
                 self.msg(format!("Error: {}", err));
@@ -221,6 +223,39 @@ impl App {
     fn change_directory(&mut self, to: PathBuf) {
         self.current_directory = to;
         self.directory_changed = true;
+    }
+
+    fn update_selected_item(&mut self) {
+        match self.current_directory_contents.get(self.current_selection) {
+            Some(item) => {
+                self.selected_item = Some(self.current_directory.join(item));
+            }
+            _ => self.selected_item = None,
+        };
+    }
+
+    fn change_selection(&mut self, change_by: i32) -> Result<()> {
+        let should_loop = false;
+        let max_selection = self.current_directory_contents.len() as i32;
+
+        let mut next_selection = self.current_selection as i32 + change_by;
+        if next_selection >= max_selection {
+            if should_loop {
+                next_selection = 0;
+            } else {
+                next_selection = max_selection - 1;
+            }
+        } else if next_selection < 0 {
+            if should_loop {
+                next_selection = max_selection - 1;
+            } else {
+                next_selection = 0;
+            }
+        }
+
+        self.current_selection = next_selection as usize;
+        self.update_selected_item();
+        Ok(())
     }
 
     // Display
