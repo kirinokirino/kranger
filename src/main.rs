@@ -18,8 +18,8 @@ struct App {
     current_selection: usize,
     selected_item: Option<PathBuf>,
 
-    current_directory_contents: Vec<String>,
-    parent_directory_contents: Vec<String>,
+    current_directory_contents: Vec<File>,
+    parent_directory_contents: Vec<File>,
 
     should_run: bool,
     directory_changed: bool,
@@ -158,9 +158,15 @@ impl App {
                 true => "->",
                 false => "  ",
             };
-            let current_item = self.current_directory_contents.get(line).unwrap_or(&empty);
+            let current_item = self
+                .current_directory_contents
+                .get(line)
+                .map_or(&empty, |file| &file.name);
 
-            let parent_item = self.parent_directory_contents.get(line).unwrap_or(&empty);
+            let parent_item = self
+                .parent_directory_contents
+                .get(line)
+                .map_or(&empty, |file| &file.name);
 
             println!(
                 "{} | {selection_arrow} {}\r",
@@ -228,7 +234,7 @@ impl App {
     fn update_selected_item(&mut self) {
         match self.current_directory_contents.get(self.current_selection) {
             Some(item) => {
-                self.selected_item = Some(self.current_directory.join(item));
+                self.selected_item = Some(self.current_directory.join(item.name.clone()));
             }
             _ => self.selected_item = None,
         };
@@ -272,13 +278,27 @@ impl App {
     }
 }
 
-fn directory_contents(path: &PathBuf) -> Vec<String> {
+fn directory_contents(path: &PathBuf) -> Vec<File> {
+    use walkdir::DirEntry;
     WalkDir::new(path)
         .max_depth(1)
         .min_depth(1)
         .into_iter()
         .filter_map(|e| e.ok())
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .map(|entry| {
+            let ftype = entry.file_type();
+            let ftype = if ftype.is_file() {
+                FileType::File
+            } else if ftype.is_dir() {
+                FileType::Directory
+            } else if ftype.is_symlink() {
+                FileType::Link
+            } else {
+                unimplemented!()
+            };
+            let name = entry.file_name().to_string_lossy().into_owned();
+            File::new(ftype, name)
+        })
         .collect()
 }
 
@@ -297,4 +317,23 @@ enum ApplicationEvent {
     NavigateDown,
     SelectNext,
     SelectPrevious,
+}
+
+#[derive(Debug, Clone)]
+struct File {
+    ftype: FileType,
+    name: String,
+}
+
+impl File {
+    fn new(ftype: FileType, name: String) -> Self {
+        Self { ftype, name }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum FileType {
+    File,
+    Directory,
+    Link,
 }
