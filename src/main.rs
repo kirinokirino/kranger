@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use anyhow::{anyhow, Result};
 use crossterm::event::{poll, read, Event, KeyCode, KeyModifiers};
 use walkdir::WalkDir;
 
@@ -18,6 +19,9 @@ struct App {
     parent_directory_contents: Vec<String>,
 
     should_run: bool,
+    directory_changed: bool,
+
+    new_events: Vec<ApplicationEvent>,
 
     debug_messages: Vec<String>,
 }
@@ -35,6 +39,9 @@ impl App {
             parent_directory_contents: Vec::new(),
 
             should_run: true,
+            directory_changed: true,
+
+            new_events: Vec::new(),
 
             debug_messages: Vec::new(),
         })
@@ -56,29 +63,35 @@ impl App {
     fn input(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         while poll(std::time::Duration::from_millis(50))? {
             if let Event::Key(key_event) = read()? {
-                match (key_event.code, key_event.modifiers) {
-                    (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
-                        self.msg("Exiting via Ctrl+C...");
-                        self.should_run = false;
-                    }
-                    (KeyCode::Char(c), _) => self.msg(format!("You pressed: {}", c)),
-                    (KeyCode::Enter, _) => self.msg("You pressed Enter!"),
-                    (KeyCode::Esc, _) => {
-                        self.msg("Closing krender");
-                        self.should_run = false;
-                    }
-                    _ => self.msg("Some other key pressed"),
+                let (key, modifiers) = (key_event.code, key_event.modifiers);
+                if let Some(event) = self.resolve_keybinding(key, modifiers) {
+                    self.new_events.push(event);
                 }
             }
         }
 
         Ok(())
     }
+
     fn update(&mut self) {
-        self.current_directory_contents = directory_contents(&self.current_directory);
-        self.parent_directory_contents =
-            directory_contents(&self.parent_directory().unwrap_or("\\".into()));
+        if self.directory_changed {
+            self.current_directory_contents = directory_contents(&self.current_directory);
+            self.parent_directory_contents =
+                directory_contents(&self.parent_directory().unwrap_or("\\".into()));
+            self.directory_changed = false;
+        }
+
+        let mut events = std::mem::take(&mut self.new_events);
+        for event in events.drain(..) {
+            match event {
+                ApplicationEvent::Close => self.should_run = false,
+                ApplicationEvent::NavigateUp => self
+                    .navigate_up()
+                    .unwrap_or_else(|error| self.msg(format!("Unable to navigate up, {error}"))),
+            }
+        }
     }
+
     fn display(&self) {
         let empty = String::new();
         print!("{CLEAR}");
@@ -107,6 +120,28 @@ impl App {
         }
     }
 
+    // Input
+
+    fn resolve_keybinding(
+        &mut self,
+        key: KeyCode,
+        modifiers: KeyModifiers,
+    ) -> Option<ApplicationEvent> {
+        match (key, modifiers) {
+            (KeyCode::Char('c'), KeyModifiers::CONTROL) => Some(ApplicationEvent::Close),
+            // (KeyCode::Char(c), _) => {
+            //     self.msg(format!("You pressed: {}", c));
+            //     None
+            // }
+            (KeyCode::Esc, _) => Some(ApplicationEvent::Close),
+            (KeyCode::Char('a'), _) => Some(ApplicationEvent::NavigateUp),
+            other => {
+                self.msg(format!("Other: {other:?}"));
+                None
+            }
+        }
+    }
+
     // Update
 
     fn parent_directory(&self) -> std::option::Option<PathBuf> {
@@ -116,13 +151,26 @@ impl App {
             .map(|path| path.to_path_buf())
     }
 
+    fn navigate_up(&mut self) -> Result<()> {
+        let parent_directory = self
+            .parent_directory()
+            .ok_or(anyhow!("No parent directory available"))?;
+        self.change_directory(parent_directory);
+        Ok(())
+    }
+
+    fn change_directory(&mut self, to: PathBuf) {
+        self.current_directory = to;
+        self.directory_changed = true;
+    }
+
     // Display
 
     fn show_breadcrumbs(&self) {
         println!("{}\r", self.current_directory.display());
     }
 
-    fn msg<T: AsRef<str>>(&mut self, message: T) {
+    fn msg(&mut self, message: impl AsRef<str>) {
         if self.debug_messages.len() > 5 {
             self.debug_messages.remove(0);
         }
@@ -146,4 +194,10 @@ fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
     } else {
         format!("{:<width$}", input, width = max_length)
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ApplicationEvent {
+    Close,
+    NavigateUp,
 }
