@@ -352,7 +352,7 @@ impl App {
 
 fn directory_contents(path: &PathBuf) -> Vec<File> {
     use walkdir::DirEntry;
-    WalkDir::new(path)
+    let mut files: Vec<File> = WalkDir::new(path)
         .max_depth(1)
         .min_depth(1)
         .into_iter()
@@ -371,7 +371,23 @@ fn directory_contents(path: &PathBuf) -> Vec<File> {
             let name = entry.file_name().to_string_lossy().into_owned();
             File::new(ftype, name)
         })
-        .collect()
+        .collect();
+
+    files.sort_by(|f1, f2| {
+        let dir1 = f1.ftype == FileType::Directory;
+        let dir2 = f2.ftype == FileType::Directory;
+        if dir1 && dir2 {
+            f1.name.cmp(&f2.name)
+        } else if dir1 && !dir2 {
+            std::cmp::Ordering::Less
+        } else if !dir1 && dir2 {
+            std::cmp::Ordering::Greater
+        } else {
+            f1.name.cmp(&f2.name)
+        }
+    });
+
+    files
 }
 
 fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
@@ -403,7 +419,7 @@ impl File {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum FileType {
     File,
     Directory,
