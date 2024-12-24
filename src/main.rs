@@ -80,41 +80,7 @@ impl App {
     }
 
     fn setup(&mut self) {
-        let default_keybindings = vec![
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('a'), KeyModifiers::NONE),
-            (KeyCode::Char('d'), KeyModifiers::NONE),
-            (KeyCode::Char('w'), KeyModifiers::NONE),
-            (KeyCode::Char('s'), KeyModifiers::NONE),
-            //
-            (KeyCode::Left, KeyModifiers::NONE),
-            (KeyCode::Right, KeyModifiers::NONE),
-            (KeyCode::Up, KeyModifiers::NONE),
-            (KeyCode::Down, KeyModifiers::NONE),
-            (KeyCode::Char('h'), KeyModifiers::NONE),
-        ];
-
-        let events_for_default_keybindings = vec![
-            ApplicationEvent::Close,
-            ApplicationEvent::Close,
-            ApplicationEvent::NavigateUp,
-            ApplicationEvent::NavigateDown,
-            ApplicationEvent::SelectPrevious,
-            ApplicationEvent::SelectNext,
-            //
-            ApplicationEvent::NavigateUp,
-            ApplicationEvent::NavigateDown,
-            ApplicationEvent::SelectPrevious,
-            ApplicationEvent::SelectNext,
-            ApplicationEvent::ToggleShowHidden,
-        ];
-        for ((key, modifiers), event) in default_keybindings
-            .into_iter()
-            .zip(events_for_default_keybindings)
-        {
-            self.add_keybinding(key, modifiers, event);
-        }
+        self.add_default_keybindings();
     }
 
     fn update(&mut self) {
@@ -147,6 +113,7 @@ impl App {
                     self.directory_changed = true;
                     Ok(())
                 }
+                ApplicationEvent::DebugEvent => Ok(()),
             };
             if let Err(err) = result {
                 self.msg(format!("Error: {}", err));
@@ -221,6 +188,7 @@ enum ApplicationEvent {
     SelectNext,
     SelectPrevious,
     ToggleShowHidden,
+    DebugEvent,
 }
 
 #[derive(Debug, Clone)]

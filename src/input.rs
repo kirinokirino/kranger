@@ -16,6 +16,50 @@ impl App {
         Ok(())
     }
 
+    pub fn add_default_keybindings(&mut self) {
+        let default_keybindings = vec![
+            // close
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            // navigation
+            (KeyCode::Char('a'), KeyModifiers::NONE),
+            (KeyCode::Char('d'), KeyModifiers::NONE),
+            (KeyCode::Char('w'), KeyModifiers::NONE),
+            (KeyCode::Char('s'), KeyModifiers::NONE),
+            (KeyCode::Left, KeyModifiers::NONE),
+            (KeyCode::Right, KeyModifiers::NONE),
+            (KeyCode::Up, KeyModifiers::NONE),
+            (KeyCode::Down, KeyModifiers::NONE),
+            //
+            (KeyCode::Char('q'), KeyModifiers::NONE),
+            (KeyCode::Char('h'), KeyModifiers::NONE),
+        ];
+
+        let events_for_default_keybindings = vec![
+            //close
+            ApplicationEvent::Close,
+            ApplicationEvent::Close,
+            //navigation
+            ApplicationEvent::NavigateUp,
+            ApplicationEvent::NavigateDown,
+            ApplicationEvent::SelectPrevious,
+            ApplicationEvent::SelectNext,
+            ApplicationEvent::NavigateUp,
+            ApplicationEvent::NavigateDown,
+            ApplicationEvent::SelectPrevious,
+            ApplicationEvent::SelectNext,
+            //
+            ApplicationEvent::DebugEvent,
+            ApplicationEvent::ToggleShowHidden,
+        ];
+        for ((key, modifiers), event) in default_keybindings
+            .into_iter()
+            .zip(events_for_default_keybindings)
+        {
+            self.add_keybinding(key, modifiers, event);
+        }
+    }
+
     pub fn add_keybinding(
         &mut self,
         key: KeyCode,
