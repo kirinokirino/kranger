@@ -84,11 +84,10 @@ impl App {
         Ok(())
     }
 
-    pub fn run_command(&mut self, command: &str, args: &str) -> Result<()> {
-        self.msg(format!("Running {} with {}", command, args));
-        let args: Vec<&str> = args.split_whitespace().collect();
+    pub fn run_command(&mut self, command: &str, args: &[&str]) -> Result<()> {
+        self.msg(format!("Running {} with {:?}", command, args));
         // Execute the `ldd` command
-        let output: Output = Command::new(command).args(args).arg(command).output()?;
+        let output: Output = Command::new(command).args(args).output()?;
 
         // Check if the command was successful
         if !output.status.success() {

@@ -122,7 +122,7 @@ impl App {
                     let command = "pfiew";
                     let args = self.selected_item.clone().unwrap();
                     let args = args.to_str().unwrap();
-                    self.run_command(command, format!("--input={}", args).as_str())
+                    self.run_command(command, &[format!("--input={}", args).as_str()])
                 }
             };
             if let Err(err) = result {
