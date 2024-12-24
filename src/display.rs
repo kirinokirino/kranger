@@ -20,10 +20,9 @@ impl App {
             };
 
             let formatted_current_item =
-                self.display_file(self.current_directory_contents.get(line), 10);
+                display_file(self.current_directory_contents.get(line), 10);
 
-            let formatted_parent_item =
-                self.display_file(self.parent_directory_contents.get(line), 15);
+            let formatted_parent_item = display_file(self.parent_directory_contents.get(line), 15);
 
             let formatted_info_line =
                 truncate_with_ellipsis(info_lines.get(i).unwrap_or(&"".to_string()), 50);
@@ -66,59 +65,59 @@ impl App {
         }
     }
 
-    fn display_file(&self, file: Option<&File>, max_length: usize) -> String {
-        if let Some(file) = file {
-            if file.name.starts_with('.') {
-                self.display_hidden_file(file, max_length)
-            } else {
-                match file.ftype {
-                    FileType::File => self.display_normal_file(file, max_length),
-                    FileType::Directory => self.display_directory(file, max_length),
-                    FileType::Link => self.display_link(file, max_length),
-                }
-            }
-        } else {
-            " ".repeat(max_length)
-        }
-    }
-
-    fn display_hidden_file(&self, file: &File, max_length: usize) -> String {
-        format!(
-            "{}{}{}",
-            ansi::GRAY,
-            truncate_with_ellipsis(&file.name, max_length),
-            ansi::RESET
-        )
-    }
-
-    fn display_normal_file(&self, file: &File, max_length: usize) -> String {
-        format!(
-            "{}{}{}",
-            ansi::WHITE,
-            truncate_with_ellipsis(&file.name, max_length),
-            ansi::RESET
-        )
-    }
-    fn display_directory(&self, file: &File, max_length: usize) -> String {
-        format!(
-            "{}{}{}",
-            ansi::BLUE,
-            truncate_with_ellipsis(&file.name, max_length),
-            ansi::RESET
-        )
-    }
-    fn display_link(&self, file: &File, max_length: usize) -> String {
-        format!(
-            "{}{}{}",
-            ansi::CYAN,
-            truncate_with_ellipsis(&file.name, max_length),
-            ansi::RESET
-        )
-    }
-
     fn show_breadcrumbs(&self) {
         println!("{}\r", self.current_directory.display());
     }
+}
+
+pub fn display_file(file: Option<&File>, max_length: usize) -> String {
+    if let Some(file) = file {
+        if file.name.starts_with('.') {
+            display_hidden_file(file, max_length)
+        } else {
+            match file.ftype {
+                FileType::File => display_normal_file(file, max_length),
+                FileType::Directory => display_directory(file, max_length),
+                FileType::Link => display_link(file, max_length),
+            }
+        }
+    } else {
+        " ".repeat(max_length)
+    }
+}
+
+fn display_hidden_file(file: &File, max_length: usize) -> String {
+    format!(
+        "{}{}{}",
+        ansi::GRAY,
+        truncate_with_ellipsis(&file.name, max_length),
+        ansi::RESET
+    )
+}
+
+fn display_normal_file(file: &File, max_length: usize) -> String {
+    format!(
+        "{}{}{}",
+        ansi::WHITE,
+        truncate_with_ellipsis(&file.name, max_length),
+        ansi::RESET
+    )
+}
+fn display_directory(file: &File, max_length: usize) -> String {
+    format!(
+        "{}{}{}",
+        ansi::BLUE,
+        truncate_with_ellipsis(&file.name, max_length),
+        ansi::RESET
+    )
+}
+fn display_link(file: &File, max_length: usize) -> String {
+    format!(
+        "{}{}{}",
+        ansi::CYAN,
+        truncate_with_ellipsis(&file.name, max_length),
+        ansi::RESET
+    )
 }
 
 fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {

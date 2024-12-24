@@ -3,6 +3,8 @@ use std::{io::Read, path::PathBuf};
 use anyhow::Result;
 use phf::phf_map;
 
+use crate::{display::display_file, file::directory_contents};
+
 pub struct Info {
     info_type: InfoType,
 
@@ -19,28 +21,29 @@ impl Info {
         })
     }
 
-    pub fn link(file: &PathBuf) -> Self {
+    pub fn link(link: &PathBuf) -> Self {
         Self {
             info_type: InfoType::Link,
             info_lines: Vec::new(),
         }
     }
 
-    pub fn directory(file: &PathBuf) -> Self {
+    pub fn directory(directory: &PathBuf) -> Self {
+        let directory_contents = directory_contents(directory, false);
+
+        let mut info_lines = Vec::with_capacity(directory_contents.len());
+        for file in directory_contents {
+            info_lines.push(display_file(Some(&file), 50));
+        }
+
         Self {
             info_type: InfoType::Directory,
-            info_lines: Vec::new(),
+            info_lines,
         }
     }
 
     pub fn lines(&self) -> Vec<String> {
-        let mut output = Vec::new();
-
-        match self.info_type {
-            t => output.push(format!("{t:?}")),
-        }
-
-        output
+        self.info_lines
     }
 }
 
