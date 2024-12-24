@@ -1,4 +1,4 @@
-use std::{io::Read, path::PathBuf};
+use std::{fs::read_to_string, io::Read, path::PathBuf};
 
 use anyhow::Result;
 use phf::phf_map;
@@ -15,9 +15,21 @@ impl Info {
     pub fn new(file: &PathBuf) -> Result<Self> {
         let info_type = InfoType::new(file)?;
 
+        let mut info_lines = Vec::new();
+        match info_type {
+            InfoType::Text => {
+                if let Ok(contents) = read_to_string(file) {
+                    for line in contents.lines().take(50) {
+                        info_lines.push(String::from(line))
+                    }
+                }
+            }
+            _ => (),
+        };
+
         Ok(Self {
             info_type,
-            info_lines: Vec::new(),
+            info_lines,
         })
     }
 
