@@ -1,0 +1,125 @@
+use crate::App;
+
+use crate::ansi;
+use crate::File;
+use crate::FileType;
+
+impl App {
+    pub fn display(&self) {
+        print!("{}", ansi::CLEAR);
+        self.show_breadcrumbs();
+
+        let (from, to) = self.rows_to_print();
+        for line in from..to {
+            let is_selected = line == self.current_selection;
+            let selection_arrow = match is_selected {
+                true => "->",
+                false => "  ",
+            };
+
+            let formatted_current_item =
+                self.display_file(self.current_directory_contents.get(line), 10);
+
+            let formatted_parent_item =
+                self.display_file(self.parent_directory_contents.get(line), 15);
+
+            println!(
+                "{} | {selection_arrow} {}\r",
+                formatted_parent_item, formatted_current_item
+            );
+        }
+
+        println!("\r");
+        for line in &self.debug_messages {
+            println!("{}\r", line);
+        }
+    }
+
+    fn rows_to_print(&self) -> (usize, usize) {
+        let rows_to_show = 12;
+
+        let max_lines = self
+            .current_directory_contents
+            .len()
+            .max(self.parent_directory_contents.len());
+
+        if max_lines > rows_to_show {
+            let half = rows_to_show / 2;
+            if self.current_selection < half {
+                // limited from the start
+                (0, rows_to_show)
+            } else if self.current_selection > (max_lines - half) {
+                // limited from the end
+                (max_lines - rows_to_show, max_lines)
+            } else {
+                // if selection > half of rows_to_show, add the diff to the window
+                let start_offset = self.current_selection - half;
+                (start_offset, self.current_selection + half)
+            }
+        } else {
+            (0, max_lines)
+        }
+    }
+
+    fn display_file(&self, file: Option<&File>, max_length: usize) -> String {
+        if let Some(file) = file {
+            if file.name.starts_with('.') {
+                self.display_hidden_file(file, max_length)
+            } else {
+                match file.ftype {
+                    FileType::File => self.display_normal_file(file, max_length),
+                    FileType::Directory => self.display_directory(file, max_length),
+                    FileType::Link => self.display_link(file, max_length),
+                }
+            }
+        } else {
+            " ".repeat(max_length)
+        }
+    }
+
+    fn display_hidden_file(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::GRAY,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
+
+    fn display_normal_file(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::WHITE,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
+    fn display_directory(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::BLUE,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
+    fn display_link(&self, file: &File, max_length: usize) -> String {
+        format!(
+            "{}{}{}",
+            ansi::CYAN,
+            truncate_with_ellipsis(&file.name, max_length),
+            ansi::RESET
+        )
+    }
+
+    fn show_breadcrumbs(&self) {
+        println!("{}\r", self.current_directory.display());
+    }
+}
+
+fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
+    if input.len() > max_length {
+        format!("{}…", &input[..max_length - 1])
+    } else {
+        format!("{:<width$}", input, width = max_length)
+    }
+}
