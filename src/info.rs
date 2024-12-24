@@ -43,7 +43,11 @@ impl Info {
     }
 
     pub fn lines(&self) -> Vec<String> {
-        self.info_lines
+        if self.info_lines.is_empty() {
+            vec![format!("{:?}", self.info_type)]
+        } else {
+            self.info_lines.clone()
+        }
     }
 }
 
