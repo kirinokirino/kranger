@@ -1,4 +1,6 @@
-use crate::{info::Info, App};
+use crate::file::FileType;
+use crate::info::Info;
+use crate::App;
 
 use anyhow::{anyhow, Result};
 
@@ -45,9 +47,9 @@ impl App {
                 self.selected_item = Some(self.current_directory.join(item.name.clone()));
                 let path = self.selected_item.as_ref().unwrap();
                 match item.ftype {
-                    crate::FileType::File => self.selection_info = Info::new(path).ok(),
-                    crate::FileType::Directory => self.selection_info = Some(Info::directory(path)),
-                    crate::FileType::Link => self.selection_info = Some(Info::link(path)),
+                    FileType::File => self.selection_info = Info::new(path).ok(),
+                    FileType::Directory => self.selection_info = Some(Info::directory(path)),
+                    FileType::Link => self.selection_info = Some(Info::link(path)),
                 }
             }
             _ => self.selected_item = None,

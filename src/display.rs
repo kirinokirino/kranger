@@ -1,7 +1,6 @@
 use crate::ansi;
+use crate::file::{File, FileType};
 use crate::App;
-use crate::File;
-use crate::FileType;
 
 impl App {
     pub fn display(&self) {
