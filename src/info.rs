@@ -5,13 +5,32 @@ use phf::phf_map;
 
 pub struct Info {
     info_type: InfoType,
+
+    info_lines: Vec<String>,
 }
 
 impl Info {
     pub fn new(file: &PathBuf) -> Result<Self> {
         let info_type = InfoType::new(file)?;
 
-        Ok(Self { info_type })
+        Ok(Self {
+            info_type,
+            info_lines: Vec::new(),
+        })
+    }
+
+    pub fn link(file: &PathBuf) -> Self {
+        Self {
+            info_type: InfoType::Link,
+            info_lines: Vec::new(),
+        }
+    }
+
+    pub fn directory(file: &PathBuf) -> Self {
+        Self {
+            info_type: InfoType::Directory,
+            info_lines: Vec::new(),
+        }
     }
 
     pub fn lines(&self) -> Vec<String> {
@@ -35,6 +54,8 @@ enum InfoType {
     Executable,
     Text,
     Unknown,
+    Link,
+    Directory,
 }
 
 impl InfoType {
@@ -57,7 +78,7 @@ impl InfoType {
     pub fn from_extension(extension: Option<&str>) -> Self {
         match extension {
             Some(extension) => match extension {
-                "rs" | "md" | "txt" | "toml" | "lock" => Self::Text,
+                "rs" | "md" | "txt" | "toml" | "lock" | "ini" => Self::Text,
                 "exe" => Self::Executable,
                 _ => Self::Unknown,
             },

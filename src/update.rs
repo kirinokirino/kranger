@@ -43,7 +43,12 @@ impl App {
         match self.current_directory_contents.get(self.current_selection) {
             Some(item) => {
                 self.selected_item = Some(self.current_directory.join(item.name.clone()));
-                self.selection_info = Info::new(self.selected_item.as_ref().unwrap()).ok();
+                let path = self.selected_item.as_ref().unwrap();
+                match item.ftype {
+                    crate::FileType::File => self.selection_info = Info::new(path).ok(),
+                    crate::FileType::Directory => self.selection_info = Some(Info::directory(path)),
+                    crate::FileType::Link => self.selection_info = Some(Info::link(path)),
+                }
             }
             _ => self.selected_item = None,
         };
