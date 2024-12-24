@@ -118,7 +118,12 @@ impl App {
                     self.directory_changed = true;
                     Ok(())
                 }
-                ApplicationEvent::DebugEvent => Ok(()),
+                ApplicationEvent::DebugEvent => {
+                    let command = "pfiew";
+                    let args = self.selected_item.clone().unwrap();
+                    let args = args.to_str().unwrap();
+                    self.run_command(command, format!("--input={}", args).as_str())
+                }
             };
             if let Err(err) = result {
                 self.msg(format!("Error: {}", err));

@@ -4,7 +4,10 @@ use crate::App;
 
 use anyhow::{anyhow, Result};
 
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    process::{Command, Output},
+};
 
 impl App {
     pub fn parent_directory(&self) -> std::option::Option<PathBuf> {
@@ -78,6 +81,25 @@ impl App {
 
         self.current_selection = next_selection as usize;
         self.update_selected_item();
+        Ok(())
+    }
+
+    pub fn run_command(&mut self, command: &str, args: &str) -> Result<()> {
+        self.msg(format!("Running {} with {}", command, args));
+        let args: Vec<&str> = args.split_whitespace().collect();
+        // Execute the `ldd` command
+        let output: Output = Command::new(command).args(args).arg(command).output()?;
+
+        // Check if the command was successful
+        if !output.status.success() {
+            return Err(anyhow!(
+                "Executing external command failed with code: {}",
+                output.status.code().unwrap_or(-1)
+            ));
+        }
+
+        //let stdout = String::from_utf8_lossy(&output.stdout);
+        //Ok(stdout.lines().map(|line| line.trim().to_string()).collect())
         Ok(())
     }
 }
