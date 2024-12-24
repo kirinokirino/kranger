@@ -27,6 +27,7 @@ impl Info {
 
 static KNOWN_NAMES: phf::Map<&'static str, InfoType> = phf_map! {
     "README" => InfoType::Text,
+    ".gitignore" => InfoType::Text,
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -56,7 +57,7 @@ impl InfoType {
     pub fn from_extension(extension: Option<&str>) -> Self {
         match extension {
             Some(extension) => match extension {
-                "rs" | "md" | "txt" => Self::Text,
+                "rs" | "md" | "txt" | "toml" | "lock" => Self::Text,
                 "exe" => Self::Executable,
                 _ => Self::Unknown,
             },
@@ -76,10 +77,27 @@ impl InfoType {
                     b"\x7FELF" => InfoType::Executable,
                     // b"\x89PNG" => Some("PNG"),
                     // b"%PDF" => Some("PDF"),
-                    _ => InfoType::Unknown,
+                    _ => {
+                        if probably_valid_utf(path) {
+                            InfoType::Text
+                        } else {
+                            InfoType::Unknown
+                        }
+                    }
                 };
-            }
-        }
+            } // couldn't read bytes
+        } // couldn't open file
         InfoType::Unknown
     }
+}
+
+fn probably_valid_utf(path: &PathBuf) -> bool {
+    if let Ok(mut file) = std::fs::File::open(path) {
+        let mut buffer = vec![0; 1024]; // Read 1KB for analysis
+        if let Ok(bytes) = file.read(&mut buffer) {
+            // Check if the content is valid UTF-8
+            return std::str::from_utf8(&buffer[..bytes]).is_ok();
+        }
+    }
+    false
 }
