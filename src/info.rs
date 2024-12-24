@@ -1,6 +1,12 @@
-use std::{fs::read_to_string, io::Read, path::PathBuf};
+use std::{
+    fs::read_to_string,
+    io::Read,
+    os::unix::fs::MetadataExt,
+    path::PathBuf,
+    process::{Command, Output},
+};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use phf::phf_map;
 
 use crate::{display::display_file, file::directory_contents};
@@ -15,16 +21,27 @@ impl Info {
     pub fn new(file: &PathBuf) -> Result<Self> {
         let info_type = InfoType::new(file)?;
 
-        let mut info_lines = Vec::new();
-        match info_type {
-            InfoType::Text => {
-                if let Ok(contents) = read_to_string(file) {
-                    for line in contents.lines().take(50) {
-                        info_lines.push(String::from(line))
-                    }
-                }
+        let info_lines = match info_type {
+            InfoType::Text => read_to_string(file)
+                .unwrap_or_default()
+                .lines()
+                .take(50)
+                .map(|s| s.to_string())
+                .collect(),
+            InfoType::Executable => {
+                let mut lines = run_ldd(file.to_str().unwrap()).unwrap_or_default();
+                lines.insert(
+                    0,
+                    format!(
+                        "Executable {}",
+                        std::fs::metadata(file)
+                            .map(|meta| format!("{:.2} MB", meta.size() as f32 / (1024.0 * 1024.0)))
+                            .unwrap_or("Unknown size".to_string())
+                    ),
+                );
+                lines
             }
-            _ => (),
+            _ => Vec::new(),
         };
 
         Ok(Self {
@@ -140,4 +157,21 @@ fn probably_valid_utf(path: &PathBuf) -> bool {
         }
     }
     false
+}
+
+fn run_ldd(executable: impl AsRef<str>) -> Result<Vec<String>> {
+    // Execute the `ldd` command
+    let output: Output = Command::new("ldd").arg(executable.as_ref()).output()?;
+
+    // Check if the command was successful
+    if !output.status.success() {
+        return Err(anyhow!(
+            "ldd command failed with exit code: {}",
+            output.status.code().unwrap_or(-1)
+        ));
+    }
+
+    // Convert the output to a vector of lines
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok(stdout.lines().map(|line| line.trim().to_string()).collect())
 }
