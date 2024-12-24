@@ -3,10 +3,12 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
+use info::Info;
 use walkdir::{DirEntry, WalkDir};
 
 mod ansi;
 mod display;
+mod info;
 mod input;
 mod update;
 
@@ -23,6 +25,7 @@ struct App {
 
     current_directory_contents: Vec<File>,
     parent_directory_contents: Vec<File>,
+    selection_info: Option<Info>,
 
     should_run: bool,
     directory_changed: bool,
@@ -48,6 +51,7 @@ impl App {
 
             current_directory_contents: Vec::new(),
             parent_directory_contents: Vec::new(),
+            selection_info: None,
 
             should_run: true,
             directory_changed: true,

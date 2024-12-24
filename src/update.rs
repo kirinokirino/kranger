@@ -1,4 +1,4 @@
-use crate::App;
+use crate::{info::Info, App};
 
 use anyhow::{anyhow, Result};
 
@@ -43,6 +43,7 @@ impl App {
         match self.current_directory_contents.get(self.current_selection) {
             Some(item) => {
                 self.selected_item = Some(self.current_directory.join(item.name.clone()));
+                self.selection_info = Info::new(self.selected_item.as_ref().unwrap()).ok();
             }
             _ => self.selected_item = None,
         };

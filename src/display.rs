@@ -1,6 +1,5 @@
-use crate::App;
-
 use crate::ansi;
+use crate::App;
 use crate::File;
 use crate::FileType;
 
@@ -9,8 +8,12 @@ impl App {
         print!("{}", ansi::CLEAR);
         self.show_breadcrumbs();
 
+        let info_lines = match &self.selection_info {
+            Some(info) => info.lines(),
+            None => Vec::new(),
+        };
         let (from, to) = self.rows_to_print();
-        for line in from..to {
+        for (i, line) in (from..to).enumerate() {
             let is_selected = line == self.current_selection;
             let selection_arrow = match is_selected {
                 true => "->",
@@ -23,9 +26,12 @@ impl App {
             let formatted_parent_item =
                 self.display_file(self.parent_directory_contents.get(line), 15);
 
+            let formatted_info_line =
+                truncate_with_ellipsis(info_lines.get(i).unwrap_or(&"".to_string()), 50);
+
             println!(
-                "{} | {selection_arrow} {}\r",
-                formatted_parent_item, formatted_current_item
+                "{} | {selection_arrow} {} | {}\r",
+                formatted_parent_item, formatted_current_item, formatted_info_line
             );
         }
 
