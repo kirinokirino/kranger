@@ -79,6 +79,7 @@ pub fn display_file(file: Option<&File>, max_length: usize) -> String {
                 FileType::File => display_normal_file(file, max_length),
                 FileType::Directory => display_directory(file, max_length),
                 FileType::Link => display_link(file, max_length),
+                FileType::Unknown => display_unknown(file, max_length),
             }
         }
     } else {
@@ -119,10 +120,21 @@ fn display_link(file: &File, max_length: usize) -> String {
         ansi::RESET
     )
 }
+fn display_unknown(file: &File, max_length: usize) -> String {
+    format!(
+        "{}{}{}",
+        ansi::RED,
+        truncate_with_ellipsis(&file.name, max_length),
+        ansi::RESET
+    )
+}
 
 fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
     if input.len() > max_length {
-        format!("{}…", &input[..max_length - 1])
+        format!(
+            "{}…",
+            &input.chars().take(max_length - 1).collect::<String>()
+        )
     } else {
         format!("{:<width$}", input, width = max_length)
     }

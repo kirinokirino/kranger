@@ -50,6 +50,7 @@ impl App {
                     FileType::File => self.selection_info = Info::new(path).ok(),
                     FileType::Directory => self.selection_info = Some(Info::directory(path)),
                     FileType::Link => self.selection_info = Some(Info::link(path)),
+                    FileType::Unknown => self.selected_item = None,
                 }
             }
             _ => self.selected_item = None,

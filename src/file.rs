@@ -19,6 +19,7 @@ pub enum FileType {
     File,
     Directory,
     Link,
+    Unknown,
 }
 
 pub fn directory_contents(path: &PathBuf, show_hidden: bool) -> Vec<File> {
@@ -48,7 +49,7 @@ pub fn directory_contents(path: &PathBuf, show_hidden: bool) -> Vec<File> {
             } else if ftype.is_symlink() {
                 FileType::Link
             } else {
-                unimplemented!()
+                FileType::Unknown
             };
             let name = entry.file_name().to_string_lossy().into_owned();
             File::new(ftype, name)

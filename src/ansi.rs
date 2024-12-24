@@ -4,6 +4,7 @@ pub const WHITE: &str = "\x1B[97m";
 pub const BLUE: &str = "\x1B[34m";
 pub const CYAN: &str = "\x1B[36m";
 pub const GRAY: &str = "\x1B[37m";
+pub const RED: &str = "\x1B[31m";
 /*
 Regular Files: White (\x1B[37m)
 Directories: Blue (\x1B[34m)
