@@ -14,7 +14,7 @@ impl App {
             Some(info) => info.lines(),
             None => Vec::new(),
         };
-        let (from, to) = self.rows_to_print();
+        let (from, to) = self.rows_to_print(info_lines.len());
         for (i, line) in (from..to).enumerate() {
             let is_selected = line == self.current_selection;
             let selection_arrow = match is_selected {
@@ -47,13 +47,14 @@ impl App {
         }
     }
 
-    fn rows_to_print(&self) -> (usize, usize) {
-        let rows_to_show = self.height - 6;
+    fn rows_to_print(&self, info_lines_len: usize) -> (usize, usize) {
+        let rows_to_show = (self.height - 2) - self.debug_messages.len();
 
         let max_lines = self
             .current_directory_contents
             .len()
-            .max(self.parent_directory_contents.len());
+            .max(self.parent_directory_contents.len())
+            .max(info_lines_len);
 
         if max_lines > rows_to_show {
             let half = rows_to_show / 2;

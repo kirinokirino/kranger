@@ -80,6 +80,7 @@ impl App {
 
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         crossterm::terminal::enable_raw_mode()?;
+        let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Hide);
 
         self.setup();
 
