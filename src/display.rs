@@ -7,7 +7,7 @@ impl App {
         let half = self.width / 2;
         let first_col_width = half / 3;
         let second_col_width = half - first_col_width;
-        print!("{}", ansi::CLEAR);
+        print!("{}{}", ansi::CLEAR, ansi::RESET);
         self.show_breadcrumbs();
 
         let info_lines = match &self.selection_info {

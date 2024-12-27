@@ -12,7 +12,7 @@ use phf::phf_map;
 use crate::{display::display_file, file::directory_contents};
 
 pub struct Info {
-    info_type: InfoType,
+    pub info_type: InfoType,
 
     info_lines: Vec<String>,
 }
@@ -86,7 +86,7 @@ static KNOWN_NAMES: phf::Map<&'static str, InfoType> = phf_map! {
 };
 
 #[derive(Debug, Copy, Clone)]
-enum InfoType {
+pub enum InfoType {
     Executable,
     Text,
     Unknown,

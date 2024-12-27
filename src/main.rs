@@ -1,7 +1,3 @@
-// Configurable size
-// not resetting ansi style somewhere (breadcrumbs sometimes blue)
-// ellipsies on ifo block
-// zoom around mouse (not top left corner)
 // when selected non-directory, run something on ->
 //		depending on what is selected
 
@@ -93,6 +89,7 @@ impl App {
 
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
+        let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Show);
         crossterm::terminal::disable_raw_mode()?;
         Ok(())
     }
@@ -116,6 +113,9 @@ enum ApplicationEvent {
     NavigateDown,
     SelectNext,
     SelectPrevious,
+    OpenImage,
+    OpenText,
+    OpenExecutable,
     ToggleShowHidden,
     DebugEvent,
 }

@@ -31,8 +31,9 @@ impl App {
             (KeyCode::Up, KeyModifiers::NONE),
             (KeyCode::Down, KeyModifiers::NONE),
             //
-            (KeyCode::Char('q'), KeyModifiers::NONE),
             (KeyCode::Char('h'), KeyModifiers::NONE),
+            (KeyCode::Char('f'), KeyModifiers::NONE),
+            (KeyCode::Char('q'), KeyModifiers::NONE),
         ];
 
         let events_for_default_keybindings = vec![
@@ -49,8 +50,9 @@ impl App {
             ApplicationEvent::SelectPrevious,
             ApplicationEvent::SelectNext,
             //
-            ApplicationEvent::DebugEvent,
             ApplicationEvent::ToggleShowHidden,
+            ApplicationEvent::OpenImage,
+            ApplicationEvent::DebugEvent,
         ];
         for ((key, modifiers), event) in default_keybindings
             .into_iter()

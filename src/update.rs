@@ -33,7 +33,31 @@ impl App {
                     Ok(())
                 }
                 ApplicationEvent::NavigateUp => self.navigate_up(),
-                ApplicationEvent::NavigateDown => self.navigate_down(),
+                ApplicationEvent::NavigateDown => match self.navigate_down() {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        if let Some(info) = &self.selection_info {
+                            match info.info_type {
+                                crate::info::InfoType::Executable => {
+                                    self.new_events.push(ApplicationEvent::OpenExecutable)
+                                }
+                                crate::info::InfoType::Text => {
+                                    self.new_events.push(ApplicationEvent::OpenText)
+                                }
+                                crate::info::InfoType::Unknown => {
+                                    self.new_events.push(ApplicationEvent::OpenImage)
+                                }
+                                crate::info::InfoType::Link => (),
+                                crate::info::InfoType::Directory => {
+                                    panic!("Should be possible to navigate_down in this case")
+                                }
+                            }
+                            Ok(())
+                        } else {
+                            Err(e)
+                        }
+                    }
+                },
                 ApplicationEvent::SelectNext => self.change_selection(1),
                 ApplicationEvent::SelectPrevious => self.change_selection(-1),
                 ApplicationEvent::ToggleShowHidden => {
@@ -41,11 +65,26 @@ impl App {
                     self.directory_changed = true;
                     Ok(())
                 }
-                ApplicationEvent::DebugEvent => {
+                ApplicationEvent::OpenImage => {
                     let command = "pfiew";
                     let args = self.selected_item.clone().unwrap();
                     let args = args.to_str().unwrap();
                     self.run_command(command, &[format!("--input={}", args).as_str()])
+                }
+                ApplicationEvent::OpenText => {
+                    let command = "micro";
+                    let args = self.selected_item.clone().unwrap();
+                    let args = args.to_str().unwrap();
+                    self.run_command(command, &[args])
+                }
+                ApplicationEvent::OpenExecutable => {
+                    let command = self.selected_item.clone().unwrap();
+                    let command = command.to_str().unwrap();
+                    self.run_command(command, &[])
+                }
+                ApplicationEvent::DebugEvent => {
+                    self.msg("q!!");
+                    Ok(())
                 }
             };
             if let Err(err) = result {
