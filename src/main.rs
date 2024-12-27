@@ -1,9 +1,16 @@
+// Configurable size
+// not resetting ansi style somewhere (breadcrumbs sometimes blue)
+// ellipsies on ifo block
+// zoom around mouse (not top left corner)
+// when selected non-directory, run something on ->
+//		depending on what is selected
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
-use file::{directory_contents, File};
+use file::File;
 use info::Info;
 
 mod ansi;
@@ -86,49 +93,6 @@ impl App {
 
     fn setup(&mut self) {
         self.add_default_keybindings();
-    }
-
-    fn update(&mut self) {
-        if self.directory_changed {
-            self.current_directory_contents =
-                directory_contents(&self.current_directory, self.show_hidden);
-            self.parent_directory_contents = directory_contents(
-                &self.parent_directory().unwrap_or("\\".into()),
-                self.show_hidden,
-            );
-            self.directory_changed = false;
-
-            self.current_selection = 0;
-            self.update_selected_item();
-        }
-
-        let mut events = std::mem::take(&mut self.new_events);
-        for event in events.drain(..) {
-            let result = match event {
-                ApplicationEvent::Close => {
-                    self.should_run = false;
-                    Ok(())
-                }
-                ApplicationEvent::NavigateUp => self.navigate_up(),
-                ApplicationEvent::NavigateDown => self.navigate_down(),
-                ApplicationEvent::SelectNext => self.change_selection(1),
-                ApplicationEvent::SelectPrevious => self.change_selection(-1),
-                ApplicationEvent::ToggleShowHidden => {
-                    self.show_hidden = !self.show_hidden;
-                    self.directory_changed = true;
-                    Ok(())
-                }
-                ApplicationEvent::DebugEvent => {
-                    let command = "pfiew";
-                    let args = self.selected_item.clone().unwrap();
-                    let args = args.to_str().unwrap();
-                    self.run_command(command, &[format!("--input={}", args).as_str()])
-                }
-            };
-            if let Err(err) = result {
-                self.msg(format!("Error: {}", err));
-            }
-        }
     }
 
     fn msg(&mut self, message: impl AsRef<str>) {

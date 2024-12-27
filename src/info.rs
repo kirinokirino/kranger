@@ -50,7 +50,7 @@ impl Info {
         })
     }
 
-    pub fn link(link: &PathBuf) -> Self {
+    pub fn link(_link: &PathBuf) -> Self {
         Self {
             info_type: InfoType::Link,
             info_lines: Vec::new(),
