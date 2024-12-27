@@ -55,7 +55,10 @@ impl App {
     }
 
     fn update_window_size(&mut self) {
-        self.msg(format!("{:?}", crossterm::terminal::window_size()));
+        if let Ok(new_size) = crossterm::terminal::window_size() {
+            self.width = 80.max((new_size.columns - 5).into());
+            self.height = 15.max((new_size.rows - 2).into());
+        }
     }
 
     fn parent_directory(&self) -> std::option::Option<PathBuf> {

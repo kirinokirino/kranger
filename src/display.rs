@@ -4,6 +4,9 @@ use crate::App;
 
 impl App {
     pub fn display(&self) {
+        let half = self.width / 2;
+        let first_col_width = half / 3;
+        let second_col_width = half - first_col_width;
         print!("{}", ansi::CLEAR);
         self.show_breadcrumbs();
 
@@ -20,17 +23,22 @@ impl App {
             };
 
             let formatted_current_item =
-                display_file(self.current_directory_contents.get(line), 10);
+                display_file(self.current_directory_contents.get(line), second_col_width);
 
-            let formatted_parent_item = display_file(self.parent_directory_contents.get(line), 15);
+            let formatted_parent_item =
+                display_file(self.parent_directory_contents.get(line), first_col_width);
 
-            let formatted_info_line =
-                truncate_with_ellipsis(info_lines.get(i).unwrap_or(&"".to_string()), 50);
-
-            println!(
-                "{} | {selection_arrow} {} | {}\r",
-                formatted_parent_item, formatted_current_item, formatted_info_line
+            let first_two_columns = format!(
+                "{} | {selection_arrow} {} | ",
+                formatted_parent_item, formatted_current_item
             );
+
+            let formatted_info_line = truncate_with_ellipsis(
+                info_lines.get(i).unwrap_or(&"".to_string()),
+                (self.width - first_two_columns.len()) - 1,
+            );
+
+            println!("{first_two_columns}{formatted_info_line}\r",);
         }
 
         println!("\r");
@@ -40,7 +48,7 @@ impl App {
     }
 
     fn rows_to_print(&self) -> (usize, usize) {
-        let rows_to_show = 12;
+        let rows_to_show = self.height - 6;
 
         let max_lines = self
             .current_directory_contents

@@ -26,6 +26,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     app.run()
 }
 struct App {
+    width: usize,
+    height: usize,
+
     starting_directory: PathBuf,
     current_directory: PathBuf,
     current_selection: usize,
@@ -52,6 +55,8 @@ impl App {
         let current_directory = starting_directory.clone();
 
         Ok(Self {
+            width: 80,
+            height: 15,
             starting_directory,
             current_directory,
             current_selection: 0,
