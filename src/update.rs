@@ -51,6 +51,15 @@ impl App {
                                 crate::info::InfoType::Directory => {
                                     panic!("Should be possible to navigate_down in this case")
                                 }
+                                crate::info::InfoType::Image => {
+                                    self.new_events.push(ApplicationEvent::OpenImage)
+                                }
+                                crate::info::InfoType::Video => {
+                                    self.new_events.push(ApplicationEvent::PlayMedia)
+                                }
+                                crate::info::InfoType::Audio => {
+                                    self.new_events.push(ApplicationEvent::PlayMedia)
+                                }
                             }
                             Ok(())
                         } else {
@@ -82,6 +91,10 @@ impl App {
                     let command = command.to_str().unwrap();
                     self.run_command(command, &[])
                 }
+                ApplicationEvent::PlayMedia => {
+                    let path = self.selected_item.clone().unwrap();
+                    self.play_media(path.to_str().unwrap())
+                }
                 ApplicationEvent::DebugEvent => {
                     self.msg("q!!");
                     Ok(())
@@ -90,6 +103,9 @@ impl App {
             if let Err(err) = result {
                 self.msg(format!("Error: {}", err));
             }
+        }
+        for child in &mut self.children {
+            let _ = child.try_wait();
         }
     }
 
@@ -176,7 +192,6 @@ impl App {
 
     fn run_command(&mut self, command: &str, args: &[&str]) -> Result<()> {
         self.msg(format!("Running {} with {:?}", command, args));
-        // Execute the `ldd` command
         let output: Output = Command::new(command).args(args).output()?;
 
         // Check if the command was successful
@@ -189,6 +204,18 @@ impl App {
 
         //let stdout = String::from_utf8_lossy(&output.stdout);
         //Ok(stdout.lines().map(|line| line.trim().to_string()).collect())
+        Ok(())
+    }
+
+    fn play_media(&mut self, path: &str) -> Result<()> {
+        // TODO: if its a short sample make mpv ignore input or something
+        self.reset_terminal()?;
+        let command = "mpv";
+        let args = &[path, "--quiet"];
+        self.msg(format!("Playing media: {command} {args:?}"));
+        let child = Command::new(command).args(args).spawn()?;
+        self.children.push(child);
+        self.setup_terminal()?;
         Ok(())
     }
 }

@@ -90,6 +90,9 @@ pub enum InfoType {
     Executable,
     Text,
     Unknown,
+    Image,
+    Video,
+    Audio,
     Link,
     Directory,
 }
@@ -116,6 +119,9 @@ impl InfoType {
             Some(extension) => match extension {
                 "rs" | "md" | "txt" | "toml" | "lock" | "ini" => Self::Text,
                 "exe" => Self::Executable,
+                "png" | "jpg" | "jpeg" => Self::Image,
+                "opus" | "flac" | "mp3" | "wav" | "ogg" => Self::Audio,
+                "mp4" | "mkv" | "webm" => Self::Video,
                 _ => Self::Unknown,
             },
             None => Self::Unknown,

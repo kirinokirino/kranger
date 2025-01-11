@@ -33,6 +33,7 @@ impl App {
             //
             (KeyCode::Char('h'), KeyModifiers::NONE),
             (KeyCode::Char('f'), KeyModifiers::NONE),
+            (KeyCode::Char('p'), KeyModifiers::NONE),
             (KeyCode::Char('q'), KeyModifiers::NONE),
         ];
 
@@ -52,6 +53,7 @@ impl App {
             //
             ApplicationEvent::ToggleShowHidden,
             ApplicationEvent::OpenImage,
+            ApplicationEvent::PlayMedia,
             ApplicationEvent::DebugEvent,
         ];
         for ((key, modifiers), event) in default_keybindings

@@ -1,8 +1,5 @@
-// when selected non-directory, run something on ->
-//		depending on what is selected
-
-use std::collections::HashMap;
 use std::path::PathBuf;
+use std::{collections::HashMap, process::Child};
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
@@ -41,6 +38,7 @@ struct App {
     keybindings: HashMap<(KeyCode, KeyModifiers), ApplicationEvent>,
 
     new_events: Vec<ApplicationEvent>,
+    children: Vec<Child>,
 
     debug_messages: Vec<String>,
 }
@@ -69,15 +67,14 @@ impl App {
             keybindings: HashMap::new(),
 
             new_events: Vec::new(),
+            children: Vec::new(),
 
             debug_messages: Vec::new(),
         })
     }
 
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        crossterm::terminal::enable_raw_mode()?;
-        let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Hide);
-
+        self.setup_terminal();
         self.setup();
 
         while self.should_run {
@@ -89,8 +86,21 @@ impl App {
 
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
+        self.reset_terminal();
+        Ok(())
+    }
+
+    fn setup_terminal(&self) -> anyhow::Result<()> {
+        crossterm::terminal::enable_raw_mode()?;
+        let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Hide);
+        print!("{}{}", ansi::CLEAR, ansi::RESET);
+        Ok(())
+    }
+
+    fn reset_terminal(&self) -> anyhow::Result<()> {
         let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Show);
         crossterm::terminal::disable_raw_mode()?;
+        print!("{}{}", ansi::CLEAR, ansi::RESET);
         Ok(())
     }
 
@@ -114,6 +124,7 @@ enum ApplicationEvent {
     SelectNext,
     SelectPrevious,
     OpenImage,
+    PlayMedia,
     OpenText,
     OpenExecutable,
     ToggleShowHidden,
