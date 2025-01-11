@@ -2,7 +2,7 @@ use crate::file::{directory_contents, FileType};
 use crate::info::Info;
 use crate::{App, ApplicationEvent};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 
 use std::{
     path::PathBuf,
@@ -104,8 +104,22 @@ impl App {
                 self.msg(format!("Error: {}", err));
             }
         }
-        for child in &mut self.children {
-            let _ = child.try_wait();
+        let mut msg = None;
+        let mut keep_children = Vec::new();
+        for mut child in &mut self.children.drain(..) {
+            let pid = child.id();
+            if let Ok(Some(result)) = child.try_wait() {
+                msg = Some(format!(
+                    "{}\nChild {pid} exited with status {result}",
+                    msg.as_deref().unwrap_or("")
+                ));
+            } else {
+                keep_children.push(child);
+            }
+        }
+        let _ = std::mem::replace(&mut self.children, keep_children);
+        if let Some(msg) = msg {
+            self.msg(msg);
         }
     }
 
@@ -202,20 +216,51 @@ impl App {
             ));
         }
 
-        //let stdout = String::from_utf8_lossy(&output.stdout);
-        //Ok(stdout.lines().map(|line| line.trim().to_string()).collect())
         Ok(())
     }
 
     fn play_media(&mut self, path: &str) -> Result<()> {
-        // TODO: if its a short sample make mpv ignore input or something
         self.reset_terminal()?;
         let command = "mpv";
-        let args = &[path, "--quiet"];
+        let args = if get_media_length(path)? > 5.0 {
+            &[path, "--quiet"].to_vec()
+        } else {
+            &[
+                path,
+                "--really-quiet",
+                "--no-input-default-bindings",
+                "--no-config",
+            ]
+            .to_vec()
+        };
         self.msg(format!("Playing media: {command} {args:?}"));
         let child = Command::new(command).args(args).spawn()?;
         self.children.push(child);
         self.setup_terminal()?;
         Ok(())
     }
+}
+
+fn get_media_length(path: &str) -> Result<f32> {
+    let command = "ffprobe";
+    let args = &[
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        path,
+    ];
+    let output: Output = Command::new(command).args(args).output()?;
+
+    // Check if the command was successful
+    if !output.status.success() {
+        return Err(anyhow!(
+            "Executing {command} {args:?} failed with code: {}",
+            output.status.code().unwrap_or(-1)
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let line = stdout.lines().next().unwrap();
+    str::parse::<f32>(line.trim()).map_err(Error::from)
 }

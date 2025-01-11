@@ -13,6 +13,14 @@ mod info;
 mod input;
 mod update;
 
+/*
+    TODO:
+    japanese things take more space than I expect,
+    some long russian string takes less for some reason,
+    L to play media with --loop
+    do something with pdf's
+    maybe save index positions to not start from the top every time
+*/
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new()?;
 
