@@ -4,6 +4,7 @@ use crate::{App, ApplicationEvent};
 
 use anyhow::{anyhow, Error, Result};
 
+use std::process::Stdio;
 use std::{
     path::PathBuf,
     process::{Command, Output},
@@ -110,7 +111,7 @@ impl App {
             let pid = child.id();
             if let Ok(Some(result)) = child.try_wait() {
                 msg = Some(format!(
-                    "{}\nChild {pid} exited with status {result}",
+                    "{} Child {pid} exited with status {result}",
                     msg.as_deref().unwrap_or("")
                 ));
             } else {
@@ -119,7 +120,7 @@ impl App {
         }
         let _ = std::mem::replace(&mut self.children, keep_children);
         if let Some(msg) = msg {
-            self.msg(msg);
+            //self.msg(msg);
         }
     }
 
@@ -220,23 +221,29 @@ impl App {
     }
 
     fn play_media(&mut self, path: &str) -> Result<()> {
-        self.reset_terminal()?;
         let command = "mpv";
-        let args = if get_media_length(path)? > 5.0 {
-            &[path, "--quiet"].to_vec()
+        let is_long = get_media_length(path)? > 5.0;
+        if is_long {
+            let args = &[path, "--quiet"];
+            self.msg(format!("Playing media: {command} {args:?}"));
+            self.run_command(command, args);
         } else {
-            &[
+            let args = &[
                 path,
                 "--really-quiet",
                 "--no-input-default-bindings",
                 "--no-config",
-            ]
-            .to_vec()
-        };
-        self.msg(format!("Playing media: {command} {args:?}"));
-        let child = Command::new(command).args(args).spawn()?;
-        self.children.push(child);
-        self.setup_terminal()?;
+            ];
+            self.msg(format!("Playing short sample: {command} {args:?}"));
+            self.reset_terminal()?;
+            let child = Command::new(command)
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .spawn()?;
+            self.children.push(child);
+            self.setup_terminal()?;
+        }
         Ok(())
     }
 }

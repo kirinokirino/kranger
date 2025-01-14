@@ -18,6 +18,7 @@ mod update;
     japanese things take more space than I expect,
     some long russian string takes less for some reason,
     L to play media with --loop
+    maybe use ffprobe for info on the right panel
     do something with pdf's
     maybe save index positions to not start from the top every time
 */
