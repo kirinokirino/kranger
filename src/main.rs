@@ -8,6 +8,7 @@ use info::Info;
 
 mod ansi;
 mod display;
+mod external;
 mod file;
 mod info;
 mod input;

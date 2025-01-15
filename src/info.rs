@@ -1,15 +1,11 @@
-use std::{
-    fs::read_to_string,
-    io::Read,
-    os::unix::fs::MetadataExt,
-    path::PathBuf,
-    process::{Command, Output},
-};
+use std::{fs::read_to_string, io::Read, os::unix::fs::MetadataExt, path::PathBuf};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use phf::phf_map;
 
-use crate::{display::display_file, file::directory_contents};
+use crate::display::display_file;
+use crate::external::{probably_valid_utf, run_external_command};
+use crate::file::directory_contents;
 
 pub struct Info {
     pub info_type: InfoType,
@@ -29,7 +25,10 @@ impl Info {
                 .map(|s| s.to_string())
                 .collect(),
             InfoType::Executable => {
-                let mut lines = run_ldd(file.to_str().unwrap()).unwrap_or_default();
+                let mut lines = match run_external_command("ldd", &[file.to_str().unwrap()]) {
+                    Ok(output) => output.unwrap(),
+                    Err(err) => vec![String::from("Unable to run ldd")],
+                };
                 lines.insert(
                     0,
                     format!(
@@ -39,6 +38,14 @@ impl Info {
                             .unwrap_or("Unknown size".to_string())
                     ),
                 );
+                lines
+            }
+            InfoType::Audio | InfoType::Video => {
+                let mut lines = match run_external_command("metadata", &[file.to_str().unwrap()]) {
+                    Ok(output) => output.unwrap(),
+                    Err(err) => vec![String::from("Unable to get metadata")],
+                };
+                lines.insert(0, format!("{info_type:?}"));
                 lines
             }
             _ => Vec::new(),
@@ -152,32 +159,4 @@ impl InfoType {
         } // couldn't open file
         InfoType::Unknown
     }
-}
-
-fn probably_valid_utf(path: &PathBuf) -> bool {
-    if let Ok(mut file) = std::fs::File::open(path) {
-        let mut buffer = vec![0; 1024]; // Read 1KB for analysis
-        if let Ok(bytes) = file.read(&mut buffer) {
-            // Check if the content is valid UTF-8
-            return std::str::from_utf8(&buffer[..bytes]).is_ok();
-        }
-    }
-    false
-}
-
-fn run_ldd(executable: impl AsRef<str>) -> Result<Vec<String>> {
-    // Execute the `ldd` command
-    let output: Output = Command::new("ldd").arg(executable.as_ref()).output()?;
-
-    // Check if the command was successful
-    if !output.status.success() {
-        return Err(anyhow!(
-            "ldd command failed with exit code: {}",
-            output.status.code().unwrap_or(-1)
-        ));
-    }
-
-    // Convert the output to a vector of lines
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    Ok(stdout.lines().map(|line| line.trim().to_string()).collect())
 }

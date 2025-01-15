@@ -1,14 +1,12 @@
+use crate::external::{get_media_length, run_external_command};
 use crate::file::{directory_contents, FileType};
 use crate::info::Info;
 use crate::{App, ApplicationEvent};
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
 
-use std::process::Stdio;
-use std::{
-    path::PathBuf,
-    process::{Command, Output},
-};
+use std::path::PathBuf;
+use std::process::{Command, Output, Stdio};
 
 impl App {
     pub fn update(&mut self) {
@@ -207,67 +205,36 @@ impl App {
 
     fn run_command(&mut self, command: &str, args: &[&str]) -> Result<()> {
         self.msg(format!("Running {} with {:?}", command, args));
-        let output: Output = Command::new(command).args(args).output()?;
-
-        // Check if the command was successful
-        if !output.status.success() {
-            return Err(anyhow!(
-                "Executing external command failed with code: {}",
-                output.status.code().unwrap_or(-1)
-            ));
+        match run_external_command(command, args) {
+            Ok(output) => Ok(()),
+            Err(err) => Err(err),
         }
-
-        Ok(())
     }
 
     fn play_media(&mut self, path: &str) -> Result<()> {
         let command = "mpv";
-        let is_long = get_media_length(path)? > 5.0;
+        let is_long = get_media_length(path)? > 1.5;
         if is_long {
-            let args = &[path, "--quiet"];
-            self.msg(format!("Playing media: {command} {args:?}"));
-            self.run_command(command, args);
+            self.reset_terminal()?;
+            let args = &[path];
+            //self.run_command(command, args);
+            Command::new(command).args(args).spawn().unwrap().wait();
+            self.setup_terminal()?;
         } else {
             let args = &[
                 path,
                 "--really-quiet",
                 "--no-input-default-bindings",
                 "--no-config",
+                "--volume=50",
             ];
-            self.msg(format!("Playing short sample: {command} {args:?}"));
-            self.reset_terminal()?;
             let child = Command::new(command)
                 .args(args)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .spawn()?;
             self.children.push(child);
-            self.setup_terminal()?;
         }
         Ok(())
     }
-}
-
-fn get_media_length(path: &str) -> Result<f32> {
-    let command = "ffprobe";
-    let args = &[
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        path,
-    ];
-    let output: Output = Command::new(command).args(args).output()?;
-
-    // Check if the command was successful
-    if !output.status.success() {
-        return Err(anyhow!(
-            "Executing {command} {args:?} failed with code: {}",
-            output.status.code().unwrap_or(-1)
-        ));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let line = stdout.lines().next().unwrap();
-    str::parse::<f32>(line.trim()).map_err(Error::from)
 }
