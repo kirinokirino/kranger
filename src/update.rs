@@ -6,7 +6,7 @@ use crate::{App, ApplicationEvent};
 use anyhow::{anyhow, Result};
 
 use std::path::PathBuf;
-use std::process::{Command, Output, Stdio};
+use std::process::{Command, Stdio};
 
 impl App {
     pub fn update(&mut self) {
@@ -59,6 +59,9 @@ impl App {
                                 crate::info::InfoType::Audio => {
                                     self.new_events.push(ApplicationEvent::PlayMedia)
                                 }
+                                crate::info::InfoType::Pdf => {
+                                    self.new_events.push(ApplicationEvent::ReadPdf)
+                                }
                             }
                             Ok(())
                         } else {
@@ -98,6 +101,12 @@ impl App {
                     self.msg("q!!");
                     Ok(())
                 }
+                ApplicationEvent::ReadPdf => {
+                    let command = "zathura";
+                    let args = self.selected_item.clone().unwrap();
+                    let args = args.to_str().unwrap();
+                    self.run_command(command, &[args])
+                }
             };
             if let Err(err) = result {
                 self.msg(format!("Error: {}", err));
@@ -117,7 +126,7 @@ impl App {
             }
         }
         let _ = std::mem::replace(&mut self.children, keep_children);
-        if let Some(msg) = msg {
+        if let Some(_msg) = msg {
             //self.msg(msg);
         }
     }
@@ -206,7 +215,7 @@ impl App {
     fn run_command(&mut self, command: &str, args: &[&str]) -> Result<()> {
         self.msg(format!("Running {} with {:?}", command, args));
         match run_external_command(command, args) {
-            Ok(output) => Ok(()),
+            Ok(_output) => Ok(()),
             Err(err) => Err(err),
         }
     }
@@ -218,7 +227,7 @@ impl App {
             self.reset_terminal()?;
             let args = &[path];
             //self.run_command(command, args);
-            Command::new(command).args(args).spawn().unwrap().wait();
+            let _ = Command::new(command).args(args).spawn().unwrap().wait();
             self.setup_terminal()?;
         } else {
             let args = &[

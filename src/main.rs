@@ -19,7 +19,6 @@ mod update;
     japanese things take more space than I expect,
     some long russian string takes less for some reason,
     L to play media with --loop
-    maybe use ffprobe for info on the right panel
     do something with pdf's
     maybe save index positions to not start from the top every time
 */
@@ -32,7 +31,7 @@ struct App {
     width: usize,
     height: usize,
 
-    starting_directory: PathBuf,
+    _starting_directory: PathBuf,
     current_directory: PathBuf,
     current_selection: usize,
     selected_item: Option<PathBuf>,
@@ -55,13 +54,13 @@ struct App {
 
 impl App {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let starting_directory = std::env::current_dir().unwrap();
-        let current_directory = starting_directory.clone();
+        let _starting_directory = std::env::current_dir().unwrap();
+        let current_directory = _starting_directory.clone();
 
         Ok(Self {
             width: 80,
             height: 15,
-            starting_directory,
+            _starting_directory,
             current_directory,
             current_selection: 0,
             selected_item: None,
@@ -84,7 +83,7 @@ impl App {
     }
 
     pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        self.setup_terminal();
+        let _ = self.setup_terminal();
         self.setup();
 
         while self.should_run {
@@ -96,7 +95,7 @@ impl App {
 
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
-        self.reset_terminal();
+        let _ = self.reset_terminal();
         Ok(())
     }
 
@@ -139,4 +138,5 @@ enum ApplicationEvent {
     OpenExecutable,
     ToggleShowHidden,
     DebugEvent,
+    ReadPdf,
 }

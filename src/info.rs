@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::{fs::read_to_string, io::Read, os::unix::fs::MetadataExt, path::PathBuf};
 
 use anyhow::Result;
@@ -27,7 +28,7 @@ impl Info {
             InfoType::Executable => {
                 let mut lines = match run_external_command("ldd", &[file.to_str().unwrap()]) {
                     Ok(output) => output.unwrap(),
-                    Err(err) => vec![String::from("Unable to run ldd")],
+                    Err(_err) => vec![String::from("Unable to run ldd")],
                 };
                 lines.insert(
                     0,
@@ -43,7 +44,7 @@ impl Info {
             InfoType::Audio | InfoType::Video => {
                 let mut lines = match run_external_command("metadata", &[file.to_str().unwrap()]) {
                     Ok(output) => output.unwrap(),
-                    Err(err) => vec![String::from("Unable to get metadata")],
+                    Err(_err) => vec![String::from("Unable to get metadata")],
                 };
                 lines.insert(0, format!("{info_type:?}"));
                 lines
@@ -57,7 +58,7 @@ impl Info {
         })
     }
 
-    pub fn link(_link: &PathBuf) -> Self {
+    pub fn link(_link: &Path) -> Self {
         Self {
             info_type: InfoType::Link,
             info_lines: Vec::new(),
@@ -100,6 +101,7 @@ pub enum InfoType {
     Image,
     Video,
     Audio,
+    Pdf,
     Link,
     Directory,
 }
@@ -129,6 +131,7 @@ impl InfoType {
                 "png" | "jpg" | "jpeg" => Self::Image,
                 "opus" | "flac" | "mp3" | "wav" | "ogg" => Self::Audio,
                 "mp4" | "mkv" | "webm" => Self::Video,
+                "pdf" => Self::Pdf,
                 _ => Self::Unknown,
             },
             None => Self::Unknown,
