@@ -139,4 +139,5 @@ enum ApplicationEvent {
     ToggleShowHidden,
     DebugEvent,
     ReadPdf,
+    RunShellScript,
 }

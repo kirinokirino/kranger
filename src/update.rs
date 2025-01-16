@@ -62,6 +62,9 @@ impl App {
                                 crate::info::InfoType::Pdf => {
                                     self.new_events.push(ApplicationEvent::ReadPdf)
                                 }
+                                crate::info::InfoType::ShellScript => {
+                                    self.new_events.push(ApplicationEvent::RunShellScript)
+                                }
                             }
                             Ok(())
                         } else {
@@ -106,6 +109,12 @@ impl App {
                     let args = self.selected_item.clone().unwrap();
                     let args = args.to_str().unwrap();
                     self.run_command(command, &[args])
+                }
+                ApplicationEvent::RunShellScript => {
+                    let command = "bash";
+                    let path = self.selected_item.clone().unwrap();
+                    let path = path.to_str().unwrap();
+                    self.run_command(command, &["-c", path])
                 }
             };
             if let Err(err) = result {

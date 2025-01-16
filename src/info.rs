@@ -19,7 +19,7 @@ impl Info {
         let info_type = InfoType::new(file)?;
 
         let info_lines = match info_type {
-            InfoType::Text => read_to_string(file)
+            InfoType::Text | InfoType::ShellScript => read_to_string(file)
                 .unwrap_or_default()
                 .lines()
                 .take(50)
@@ -104,6 +104,7 @@ pub enum InfoType {
     Pdf,
     Link,
     Directory,
+    ShellScript,
 }
 
 impl InfoType {
@@ -132,6 +133,7 @@ impl InfoType {
                 "opus" | "flac" | "mp3" | "wav" | "ogg" => Self::Audio,
                 "mp4" | "mkv" | "webm" => Self::Video,
                 "pdf" => Self::Pdf,
+                "sh" => Self::ShellScript,
                 _ => Self::Unknown,
             },
             None => Self::Unknown,
