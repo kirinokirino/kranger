@@ -108,7 +108,7 @@ impl App {
                     let command = "zathura";
                     let args = self.selected_item.clone().unwrap();
                     let args = args.to_str().unwrap();
-                    self.run_command(command, &[args])
+                    self.run_command(command, &["--fork", args])
                 }
                 ApplicationEvent::RunShellScript => {
                     let command = "bash";
