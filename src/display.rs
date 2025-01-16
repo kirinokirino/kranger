@@ -4,9 +4,12 @@ use crate::App;
 
 impl App {
     pub fn display(&self) {
-        let half = self.width / 2;
-        let first_col_width = half / 3;
-        let second_col_width = half - first_col_width;
+        let padding = 9;
+        let space_for_text = self.width - padding;
+        // 20% 40% 40%
+        let first_col_width = space_for_text / 5;
+        let second_col_width = first_col_width * 2;
+        //assert!(self.width > (first_col_width + second_col_width + padding));
         print!("{}{}", ansi::CLEAR, ansi::RESET);
         self.show_breadcrumbs();
 
@@ -28,6 +31,7 @@ impl App {
             let formatted_parent_item =
                 display_file(self.parent_directory_contents.get(line), first_col_width);
 
+            // padding is 3 + 2 + 4 characters
             let first_two_columns = format!(
                 "{} | {selection_arrow} {} | ",
                 formatted_parent_item, formatted_current_item
@@ -35,7 +39,7 @@ impl App {
 
             let formatted_info_line = truncate_with_ellipsis(
                 info_lines.get(i).unwrap_or(&"".to_string()),
-                (self.width - first_two_columns.len()) - 1,
+                second_col_width,
             );
 
             println!("{first_two_columns}{formatted_info_line}\r",);
@@ -139,7 +143,11 @@ fn display_unknown(file: &File, max_length: usize) -> String {
 }
 
 fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
-    if input.len() > max_length {
+    if max_length < 3 {
+        return "…".to_owned();
+    }
+    let chars_len = &input.chars().count();
+    if chars_len > &max_length {
         format!(
             "{}…",
             &input.chars().take(max_length - 1).collect::<String>()
