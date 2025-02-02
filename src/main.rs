@@ -16,6 +16,7 @@ mod update;
 
 /*
     TODO:
+	use trash and be able to remove files
     japanese things take more space than I expect,
     some long russian string takes less for some reason,
     L to play media with --loop

@@ -146,13 +146,48 @@ fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
     if max_length < 3 {
         return "…".to_owned();
     }
-    let chars_len = &input.chars().count();
-    if chars_len > &max_length {
+    let chars_len = &input
+        .chars().count();
+    let wide_chars = &input.chars().filter(|ch| is_wide(*ch)).count();
+    // Offset the number of wide_characters (as if they are 2x size)
+    if chars_len > &(max_length - wide_chars) {
         format!(
             "{}…",
-            &input.chars().take(max_length - 1).collect::<String>()
+            &input.chars().take(max_length - 1 - wide_chars).collect::<String>()
         )
     } else {
-        format!("{:<width$}", input, width = max_length)
+        format!("{:<width$}", input, width = max_length - wide_chars)
     }
 }
+
+
+fn is_wide(ch: char) -> bool {
+    // TODO: add more scripts
+    let is_kanji = is_char_between_char_range(ch, KANJI_BEG, KANJI_END);
+    let is_katakana = is_char_between_char_range(ch, KATAKANA_BEG, KATAKANA_END);
+    let is_hiragana = is_char_between_char_range(ch, HIRAGANA_BEG, HIRAGANA_END);
+    let is_fullwidth = is_char_between_char_range(ch, FULLWIDTH_BEG, FULLWIDTH_END);
+    is_hiragana || is_katakana || is_kanji || is_fullwidth
+}
+
+// https://github.com/kitallis/konj
+// taken from this project's `strings` file.
+pub fn is_char_between_char_range(ch: char, range_beg: char, range_end: char) -> bool {
+    if !(ch >= range_beg && ch <= range_end) {
+        // || ch.is_whitespace()) {
+        return false;
+    }
+
+    true
+}
+
+// https://github.com/kitallis/konj
+// taken from this project's `constants` file.
+pub const HIRAGANA_BEG: char = '\u{3040}';
+pub const HIRAGANA_END: char = '\u{309F}';
+pub const KATAKANA_BEG: char = '\u{30A0}';
+pub const KATAKANA_END: char = '\u{30FF}';
+pub const KANJI_BEG: char = '\u{4E00}';
+pub const KANJI_END: char = '\u{9FAF}';
+pub const FULLWIDTH_BEG: char = '\u{FF01}';
+pub const FULLWIDTH_END: char = '\u{FF60}';
