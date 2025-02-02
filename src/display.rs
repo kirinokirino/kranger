@@ -167,7 +167,8 @@ fn is_wide(ch: char) -> bool {
     let is_katakana = is_char_between_char_range(ch, KATAKANA_BEG, KATAKANA_END);
     let is_hiragana = is_char_between_char_range(ch, HIRAGANA_BEG, HIRAGANA_END);
     let is_fullwidth = is_char_between_char_range(ch, FULLWIDTH_BEG, FULLWIDTH_END);
-    is_hiragana || is_katakana || is_kanji || is_fullwidth
+    let is_cjk_symbol = is_char_between_char_range(ch, CJK_SYMBOL_BEG, CJK_SYMBOL_END);
+    is_hiragana || is_katakana || is_kanji || is_fullwidth || is_cjk_symbol
 }
 
 // https://github.com/kitallis/konj
@@ -191,3 +192,6 @@ pub const KANJI_BEG: char = '\u{4E00}';
 pub const KANJI_END: char = '\u{9FAF}';
 pub const FULLWIDTH_BEG: char = '\u{FF01}';
 pub const FULLWIDTH_END: char = '\u{FF60}';
+//Unicode Block “CJK Symbols and Punctuation”
+pub const CJK_SYMBOL_BEG: char = '\u{3000}';
+pub const CJK_SYMBOL_END: char = '\u{303F}';
