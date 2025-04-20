@@ -85,6 +85,13 @@ impl App {
                     let args = args.to_str().unwrap();
                     self.run_command(command, &[format!("--input={}", args).as_str()])
                 }
+                ApplicationEvent::OpenImageFolder => {
+                    let command = "pfiew";
+                    let path = self.selected_item.clone().unwrap();
+                    let folder = &path.parent().unwrap();
+                    let args = folder.to_str().unwrap();
+                    self.run_command(command, &[format!("--input={}", args).as_str()])
+                }
                 ApplicationEvent::OpenText => {
                     let command = "micro";
                     let args = self.selected_item.clone().unwrap();

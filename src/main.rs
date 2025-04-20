@@ -134,6 +134,7 @@ enum ApplicationEvent {
     SelectNext,
     SelectPrevious,
     OpenImage,
+    OpenImageFolder,
     PlayMedia,
     OpenText,
     OpenExecutable,

@@ -52,7 +52,7 @@ impl App {
             ApplicationEvent::SelectNext,
             //
             ApplicationEvent::ToggleShowHidden,
-            ApplicationEvent::OpenImage,
+            ApplicationEvent::OpenImageFolder,
             ApplicationEvent::PlayMedia,
             ApplicationEvent::DebugEvent,
         ];
