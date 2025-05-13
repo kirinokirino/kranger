@@ -10,7 +10,7 @@ impl App {
         let first_col_width = space_for_text / 5;
         let second_col_width = first_col_width * 2;
         //assert!(self.width > (first_col_width + second_col_width + padding));
-        print!("{}{}", ansi::CLEAR, ansi::RESET);
+        print!("{}{}", ansi::ORIGIN, ansi::RESET);
         self.show_breadcrumbs();
 
         let info_lines = match &self.selection_info {
@@ -42,13 +42,15 @@ impl App {
                 second_col_width,
             );
 
-            println!("{first_two_columns}{formatted_info_line}\r",);
+            print!("{first_two_columns}{formatted_info_line}\n\r",);
         }
 
-        println!("\r");
+        //print!("\n\r");
         for line in &self.debug_messages {
-            println!("{}\r", line);
+            print!("{}\n\r", line);
         }
+        print!("{}{}", ansi::CLEAR_REST, ansi::RESET);
+        println!();
     }
 
     fn rows_to_print(&self, info_lines_len: usize) -> (usize, usize) {
@@ -79,7 +81,7 @@ impl App {
     }
 
     fn show_breadcrumbs(&self) {
-        println!("{}\r", self.current_directory.display());
+        print!("{}\n\r", self.current_directory.display());
     }
 }
 
@@ -146,20 +148,21 @@ fn truncate_with_ellipsis(input: &str, max_length: usize) -> String {
     if max_length < 3 {
         return "…".to_owned();
     }
-    let chars_len = &input
-        .chars().count();
+    let chars_len = &input.chars().count();
     let wide_chars = &input.chars().filter(|ch| is_wide(*ch)).count();
     // Offset the number of wide_characters (as if they are 2x size)
     if chars_len > &(max_length - wide_chars) {
         format!(
             "{}…",
-            &input.chars().take(max_length - 1 - wide_chars).collect::<String>()
+            &input
+                .chars()
+                .take(max_length - 1 - wide_chars)
+                .collect::<String>()
         )
     } else {
         format!("{:<width$}", input, width = max_length - wide_chars)
     }
 }
-
 
 fn is_wide(ch: char) -> bool {
     // TODO: add more scripts

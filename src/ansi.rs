@@ -1,5 +1,7 @@
 pub const CLEAR: &str = "\x1B[2J\x1B[1;1H";
+pub const CLEAR_REST: &str = "\x1B[0J";
 pub const RESET: &str = "\x1B[0m";
+pub const ORIGIN: &str = "\x1B[H";
 pub const WHITE: &str = "\x1B[97m";
 pub const BLUE: &str = "\x1B[34m";
 pub const CYAN: &str = "\x1B[36m";

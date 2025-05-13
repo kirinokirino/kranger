@@ -16,7 +16,7 @@ mod update;
 
 /*
     TODO:
-	use trash and be able to remove files
+    use trash and be able to remove files
     japanese things take more space than I expect,
     some long russian string takes less for some reason,
     L to play media with --loop
@@ -94,7 +94,7 @@ impl App {
             self.update();
             self.display();
 
-            std::thread::sleep(std::time::Duration::from_millis(5));
+            std::thread::sleep(std::time::Duration::from_millis(10));
         }
         let _ = self.reset_terminal();
         Ok(())
@@ -103,14 +103,14 @@ impl App {
     fn setup_terminal(&self) -> anyhow::Result<()> {
         crossterm::terminal::enable_raw_mode()?;
         let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Hide);
-        print!("{}{}", ansi::CLEAR, ansi::RESET);
+        println!("{}{}", ansi::CLEAR, ansi::RESET);
         Ok(())
     }
 
     fn reset_terminal(&self) -> anyhow::Result<()> {
         let _ = crossterm::execute!(std::io::stdout(), crossterm::cursor::Show);
         crossterm::terminal::disable_raw_mode()?;
-        print!("{}{}", ansi::CLEAR, ansi::RESET);
+        println!("{}{}", ansi::CLEAR, ansi::RESET);
         Ok(())
     }
 
